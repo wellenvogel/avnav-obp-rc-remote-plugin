@@ -127,8 +127,9 @@ class Plugin(object):
         self.api.log("keycode=%d, translated=%s",keycode,v)
         if v is not None:
           self.api.sendRemoteCommand('K',v)
-      except KeyboardInterrupt:
-        gpio.cleanup()
+      except Exception as e:
+        self.api.error("error: "%e)
+        
     gpio.cleanup()
 
 
