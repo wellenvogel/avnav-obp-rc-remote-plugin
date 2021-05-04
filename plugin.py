@@ -59,6 +59,13 @@ class Plugin(object):
       'default': False,
       'type':'BOOLEAN',
       'description': 'allow keys to repeat'
+    },
+    {
+      'name': 'channel',
+      'default':0,
+      'type': 'SELECT',
+      'description': 'the remote control channel to be used',
+      'rangeOrList': ['0','1','2','3','4']
     }
   ]
   KM_PARAM=[
@@ -108,8 +115,9 @@ class Plugin(object):
     self.configSequence=0
     self.keyMap={}
     self.allowRepeat=False
+    self.channel=0
 
-  def _buildKeyMap(self):
+  def _computeSettings(self):
     newKm={}
     for km in self.KM_PARAM:
       keyId=None
@@ -126,11 +134,12 @@ class Plugin(object):
     if isinstance(allowRepeat,str):
       allowRepeat=allowRepeat.upper() == 'TRUE'
     self.allowRepeat=allowRepeat
+    self.channel=int(self.api.getConfigValue('channel',0))
 
 
   def updateParam(self,newParam):
     self.api.saveConfigValues(newParam)
-    self._buildKeyMap()
+    self._computeSettings()
 
 
   def stop(self):
@@ -148,7 +157,7 @@ class Plugin(object):
     seq=0
     if not hasPackages:
       raise Exception("missing packages for remote control")
-    self._buildKeyMap()
+    self._computeSettings()
     self.api.setStatus('NMEA','running')
     i2c = smbus.SMBus(1)
     currentMode=gpio.getmode()
@@ -171,7 +180,7 @@ class Plugin(object):
           continue
       try:
         if newIrq:
-          self.api.setStatus('NMEA','running using irq pin %d'%irq)
+          self.api.setStatus('NMEA','running using irq pin %d, channel %d'%(irq,self.channel))
           newIrq=False
         c=gpio.wait_for_edge(irq, gpio.RISING,timeout=1000)
         if c is None:
@@ -182,7 +191,7 @@ class Plugin(object):
         v=self.keyMap.get(keycode)
         self.api.log("keycode=%d, translated=%s",keycode,v)
         if v is not None:
-          self.api.sendRemoteCommand('K',v)
+          self.api.sendRemoteCommand('K',v,channel=self.channel)
       except Exception as e:
         self.api.setStatus("ERROR","%s"%e)
         time.sleep(1)
