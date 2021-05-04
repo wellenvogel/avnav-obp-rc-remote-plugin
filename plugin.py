@@ -17,39 +17,34 @@ address = 0x14
 
 
 # keycodes
-PB_ZOOM_OUT = 0x00
-PB_ZOOM_IN = 0x01
-PB_CSR_UP = 0x02
-PB_CSR_UP_RPT = 0x42
-PB_CSR_LT = 0x03
-PB_CSR_LT_RPT = 0x43
-PB_CSR_RT = 0x04
-PB_CSR_RT_RPT = 0x44
-PB_CSR_DN = 0x05
-PB_CSR_DN_RPT = 0x45
-PB_MOUSE_LT = 0x06
-PB_MOUSE_RT = 0x07
-PB_ESC = 0x08
-PB_RETURN = 0x09
-PB_CENTER = 0x0a
-PB_MOUSE_KB = 0x0b
-PB_DASHBRD = 0x0c
-PB_TAB = 0x0d
-
-keyMap={
-  PB_ZOOM_OUT: 'PageUp',
-  PB_ZOOM_IN: 'PageDown',
-  PB_RETURN: 'Enter',
-  PB_CENTER: 'c',
-  PB_ESC: 'Escape',
-  PB_TAB: 'Tab',
-  PB_CSR_RT: 'ArrowRight',
-  PB_CSR_RT_RPT: 'ArrowRight',
-  PB_CSR_UP: 'ArrowUp',
-  PB_CSR_UP_RPT: 'ArrowUp',
-  PB_CSR_DN: 'ArrowDown',
-  PB_CSR_DN_RPT: 'ArrowDown'
+keyNames={
+  0x00:"ZOOM_OUT",
+  0x01:"ZOOM_IN",
+  0x02:"UP",
+  0x03:"LEFT",
+  0x04:"RIGHT",
+  0x05:"DOWN",
+  0x06:"LOCK",
+  0x07:"DASHBOARD",
+  0x08:"STOP",
+  0x09:"COURSEUP",
+  0x0a:"ROUTE",
+  0x0b:"WAYPOINT",
+  0x0c:"CANCEL",
+  0x0d:"ENTER"
 }
+
+
+class KM(object):
+  def __init__(self,name,default,description=None):
+    self.name=name
+    self.description=description
+    if self.description is None:
+      self.description="Keymapping for key %s, refer to the AvNav doc for keyboard shortcuts"%self.name
+    self.default=default
+    self.type='STRING'
+  def v(self):
+    return self.__dict__
 
 class Plugin(object):
   CONFIG=[
@@ -58,7 +53,29 @@ class Plugin(object):
       'default': 11,
       'type': 'NUMBER',
       'description': 'the irq pin in board numbering (the default of 11 is GPIO17)'
+    },
+    {
+      'name': 'allowRepeat',
+      'default': False,
+      'type':'BOOLEAN',
+      'description': 'allow keys to repeat'
     }
+  ]
+  KM_PARAM=[
+    KM(keyNames[0],'PageUp'),
+    KM(keyNames[1],'PageDown'),
+    KM(keyNames[2],'ArrowUp'),
+    KM(keyNames[3],'ArrowLeft'),
+    KM(keyNames[4],'ArrowRight'),
+    KM(keyNames[5],'ArrowDown'),
+    KM(keyNames[6],'t'),
+    KM(keyNames[7],'d'),
+    KM(keyNames[8],'s'),
+    KM(keyNames[9],'b'),
+    KM(keyNames[10],'r'),
+    KM(keyNames[11],'g'),
+    KM(keyNames[12],'Escape'),
+    KM(keyNames[13],'Enter')
   ]
   @classmethod
   def pluginInfo(cls):
@@ -84,12 +101,38 @@ class Plugin(object):
         @type  api: AVNApi
     """
     self.api = api
-    self.api.registerEditableParameters(self.CONFIG,self.updateParam)
+    self.api.registerEditableParameters(
+      self.CONFIG + list(map(lambda d: d.v(),self.KM_PARAM)),
+      self.updateParam)
     self.api.registerRestart(self.stop)
     self.configSequence=0
+    self.keyMap={}
+    self.allowRepeat=False
 
-  def updateParam(self):
-    pass
+  def _buildKeyMap(self):
+    newKm={}
+    for km in self.KM_PARAM:
+      keyId=None
+      for k,v in keyNames.items():
+        if v == km.name:
+          keyId=k
+          break
+      if keyId is None:
+        continue
+      mapping=self.api.getConfigValue(km.name,km.default)
+      newKm[keyId]=mapping
+    self.keyMap=newKm
+    allowRepeat=self.api.getConfigValue('allowRepeat',False)
+    if isinstance(allowRepeat,str):
+      allowRepeat=allowRepeat.upper() == 'TRUE'
+    self.allowRepeat=allowRepeat
+
+
+  def updateParam(self,newParam):
+    self.api.saveConfigValues(newParam)
+    self._buildKeyMap()
+
+
   def stop(self):
     pass
 
@@ -105,6 +148,7 @@ class Plugin(object):
     seq=0
     if not hasPackages:
       raise Exception("missing packages for remote control")
+    self._buildKeyMap()
     self.api.setStatus('NMEA','running')
     i2c = smbus.SMBus(1)
     currentMode=gpio.getmode()
@@ -112,24 +156,37 @@ class Plugin(object):
       gpio.setmode(gpio.BOARD)
     self.api.log("gpio mode=%d",gpio.getmode())
     lastIrq=None
+    newIrq=False
     while not self.api.shouldStopMainThread():
       irq=int(self.api.getConfigValue('irgPin',11))
       if irq != lastIrq:
-        self.api.log("using irq pin %d",irq)
-        gpio.setup(irq, gpio.IN)
-        lastIrq=irq
+        try:
+          self.api.debug("using irq pin %d",irq)
+          gpio.setup(irq, gpio.IN)
+          lastIrq=irq
+          newIrq=True
+        except Exception as e:
+          self.api.setStatus('ERROR',"unable to set up pin %d: %s"%(irq,e))
+          time.sleep(1)
+          continue
       try:
+        if newIrq:
+          self.api.setStatus('NMEA','running using irq pin %d'%irq)
+          newIrq=False
         c=gpio.wait_for_edge(irq, gpio.RISING,timeout=1000)
         if c is None:
           continue
         keycode = i2c.read_byte(address)
-        v=keyMap.get(keycode)
+        if self.allowRepeat:
+          keycode=keycode & 0x3f
+        v=self.keyMap.get(keycode)
         self.api.log("keycode=%d, translated=%s",keycode,v)
         if v is not None:
           self.api.sendRemoteCommand('K',v)
       except Exception as e:
-        self.api.error("error: "%e)
-        
-    gpio.cleanup()
+        self.api.setStatus("ERROR","%s"%e)
+        time.sleep(1)
+        newIrq=True
+
 
 
