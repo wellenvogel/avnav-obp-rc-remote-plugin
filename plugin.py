@@ -27,10 +27,10 @@ keyNames={
   0x06:"LOCK",
   0x07:"DASHBOARD",
   0x08:"STOP",
-  0x09:"COURSEUP",
-  0x0a:"ROUTE",
+  0x09:"AIS",
+  0x0a:"NEXT",
   0x0b:"WAYPOINT",
-  0x0c:"CANCEL",
+  0x0c:"NORTH",
   0x0d:"ENTER"
 }
 
@@ -69,19 +69,19 @@ class Plugin(object):
     }
   ]
   KM_PARAM=[
-    KM(keyNames[0],'PageUp'),
-    KM(keyNames[1],'PageDown'),
+    KM(keyNames[0],'PageDown'),
+    KM(keyNames[1],'PageUp'),
     KM(keyNames[2],'ArrowUp'),
     KM(keyNames[3],'ArrowLeft'),
     KM(keyNames[4],'ArrowRight'),
     KM(keyNames[5],'ArrowDown'),
     KM(keyNames[6],'t'),
     KM(keyNames[7],'d'),
-    KM(keyNames[8],'s'),
-    KM(keyNames[9],'b'),
-    KM(keyNames[10],'r'),
-    KM(keyNames[11],'g'),
-    KM(keyNames[12],'Escape'),
+    KM(keyNames[8],'q'),
+    KM(keyNames[9],'a'),
+    KM(keyNames[10],'n'),
+    KM(keyNames[11],'Control-g'),
+    KM(keyNames[12],'b'),
     KM(keyNames[13],'Enter')
   ]
   @classmethod
