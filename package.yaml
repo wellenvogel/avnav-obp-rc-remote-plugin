@@ -2,7 +2,7 @@
 #
 # check https://nfpm.goreleaser.com/configuration for detailed usage
 #
-name: "avnav-chremote-plugin"
+name: "avnav-obp-rc-remote-plugin"
 arch: "all"
 platform: "linux"
 version: "v1.0.0"
