@@ -63,3 +63,12 @@ jobs:
           asset_path: ./${{ env.PKG_NAME }}
           asset_name: ${{ env.PKG_NAME }}
           asset_content_type: application/octet-stream
+
+      - name: Upload Repository
+        uses:  wellenvogel/sftp-upload-action@v1.0
+        with:
+          privateKey: '${{ secrets.REPO_KEY }}'
+          server: '${{ secrets.REPO_SERVER }}'
+          user: '${{ secrets.REPO_USER }}'
+          localFile: ${{ steps.pkgyml.outputs.name }}_${{ steps.version.outputs.version}}_${{ steps.pkgyml.outputs.arch }}.deb
+          remoteDir: '/release/avnav-mapproxy-plugin/${{ steps.version.outputs.version}}'    
