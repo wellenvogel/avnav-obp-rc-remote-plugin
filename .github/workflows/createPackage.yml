@@ -66,9 +66,11 @@ jobs:
 
       - name: Upload Repository
         uses:  wellenvogel/sftp-upload-action@v1.0
+        env:
+          PKG_DIR: ${{ steps.pkgyml.outputs.name }}_${{ steps.version.outputs.version}}_${{ steps.pkgyml.outputs.arch }}
         with:
           privateKey: '${{ secrets.REPO_KEY }}'
           server: '${{ secrets.REPO_SERVER }}'
           user: '${{ secrets.REPO_USER }}'
           localFile: ${{ steps.pkgyml.outputs.name }}_${{ steps.version.outputs.version}}_${{ steps.pkgyml.outputs.arch }}.deb
-          remoteDir: '/release/avnav-mapproxy-plugin/${{ steps.version.outputs.version}}'    
+          remoteDir: '/release/${{ env.PKG_DIR }}/${{ steps.version.outputs.version}}'    
