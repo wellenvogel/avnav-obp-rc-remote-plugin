@@ -67,7 +67,7 @@ jobs:
       - name: Upload Repository
         uses:  wellenvogel/sftp-upload-action@v1.0
         env:
-          PKG_DIR: ${{ steps.pkgyml.outputs.name }}_${{ steps.version.outputs.version}}_${{ steps.pkgyml.outputs.arch }}
+          PKG_DIR: ${{ steps.pkgyml.outputs.name }}
         with:
           privateKey: '${{ secrets.REPO_KEY }}'
           server: '${{ secrets.REPO_SERVER }}'
