@@ -12,10 +12,6 @@ try:
 except:
   hasPackages=False
 
-# ir-receiver I2C address
-address = 0x14
-
-
 # keycodes
 keyNames={
   0x00:"ZOOM_OUT",
@@ -53,6 +49,12 @@ class Plugin(object):
       'default': 11,
       'type': 'NUMBER',
       'description': 'the irq pin in board numbering (the default of 11 is GPIO17)'
+    },
+    {
+      'name':'i2cAddress',
+      'default': 0x14,
+      'type': 'NUMBER',
+      'description': 'the i2c address of the IR receiver'
     },
     {
       'name': 'allowRepeat',
@@ -185,6 +187,7 @@ class Plugin(object):
         c=gpio.wait_for_edge(irq, gpio.RISING,timeout=1000)
         if c is None:
           continue
+        address=int(self.api.getConfigValue('i2cAddress',0x14))
         keycode = i2c.read_byte(address)
         if self.allowRepeat:
           keycode=keycode & 0x3f
