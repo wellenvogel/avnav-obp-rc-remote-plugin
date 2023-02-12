@@ -6,7 +6,7 @@ name: "avnav-obp-rc-remote-plugin"
 arch: "all"
 platform: "linux"
 version: "v1.0.0"
-keep_version: true
+version_schema: "none"
 section: "default"
 priority: "extra"
 depends:
@@ -21,3 +21,7 @@ license: "MIT"
 contents:
 - src: ./plugin.*
   dst: /usr/lib/avnav/plugins/chremote
+
+deb:
+  fields:
+    avnav-plugin: system-chremote

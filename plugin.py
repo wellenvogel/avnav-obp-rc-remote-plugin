@@ -45,7 +45,7 @@ class KM(object):
 class Plugin(object):
   CONFIG=[
     {
-      'name':'irgPin',
+      'name':'irqPin',
       'default': 11,
       'type': 'NUMBER',
       'description': 'the irq pin in board numbering (the default of 11 is GPIO17)'
@@ -169,7 +169,11 @@ class Plugin(object):
     lastIrq=None
     newIrq=False
     while not self.api.shouldStopMainThread():
-      irq=int(self.api.getConfigValue('irgPin',11))
+      irqV=self.api.getConfigValue('irqPin',None)
+      if irqV is None:
+        #fallback old value
+        irqV=self.api.getConfigValue('irgPin',11)
+      irq=int(irqV)  
       if irq != lastIrq:
         try:
           self.api.debug("using irq pin %d",irq)
