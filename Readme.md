@@ -15,4 +15,12 @@ It requires AvNav >= 20210504.
 To make a AvNav Display (a web browser window) listen to such remote key presses
 open the settings , section Remote and enable "read from remote channel".
 
+To be able to run the plugin you need to install one of:
+
+*  python3-rpi.gpio for bullseye and below
+*  python3-rpi-lgpio for bookworm and above
+
+Those packages are not directly included as dependencies - so you need to install them separately.
+
+
 
